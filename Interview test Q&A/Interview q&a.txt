@@ -1,0 +1,197 @@
+Interview prep:
+
+These were mock interview questions given to me and after each question I provided an answer broken
+down into steps that helps to prove compitency and knowledge. Two key factors employers look for.
+You'll notice I use my cloud based network project as an example to answer these to provide better
+explaination and proof of both knowledge and experience.
+
+--Network Security--
+
+Suppose you have a firewall that's supposed to block SSH connections, but instead lets them through.
+How would you debug it?
+
+Restate problem
+  1. The firewall that is supposed to be blocking all ssh connections is not working as expected.
+
+Provide a concrete example scenario
+  2. In my cloud network project I did allow ssh connections to all of my VMs, however, each only
+     accepted the connection from one specific source using private public key pairs. The exception
+     to that was the jump box which used inbound rules to only allow my local machine access.
+
+   - If you attempt to connect to a VM that does not allow ssh connections, you will get an error
+     response, or the connection will time out depnding on the scenario.
+
+Explain the solution requirements
+  3. In my previous example, if one of my VMs was allowing ssh connection from any 
+     source instead of just the one allowed, I would first assume it was an error in the security 
+     rules I set and would go double check those. It's also possible that VM was mistakenly not 
+     placed in the security group at all.
+
+   - The configurations I would first double-check are the network security group inbound rules
+
+   - After making the corrections I would troubleshoot by attempting an SSH connection from a
+     source not permitted by specified inbound rules.
+
+Explain the solution details
+  4. Based on the assumption it was an error in my inbound rules, I would look into the Network
+     Security Groups panes to view all current rules for anything missing, incorrect, or errors in
+     priority level. To make sure that VM was included in the network security group I would first
+     check the virtual networks to verify that VM was placed correcty, as the security group is
+     assigned to a speific network.
+
+   - The specific controls to check would be the rules denying all inbound traffic, to verify it
+     states "any port", "any protocol", "any source", "any destination", and is set to "Deny" with 
+     less priority than the rules specifying which sources are "Allowed". Next I would verify the 
+     rules that allow only specific traffic are correct in specifying only one source is allowed.
+
+   - To troubleshoot the fix I just made, I would attempt an SSH connection from a source that
+     should be denied access to verify it is indeed blocking that outside traffic.
+
+Identify Advantages/Disadvantages of the solution
+  5. With the only way into the Virtual Network being my local machine, it does grant a large amount
+     of security with nearly no way of penatration. However, that means if my machine is compromised
+     then the attacker could potentially have access to the whole network as well since I use
+     public/private key pairs in lue of a password.
+
+   - To monitor any future authentication attempts on my network, I have an ELK server in place that
+     sends this data to logstash for me to keep an eye on.
+
+--Cloud Security--
+
+How would you control access to a cloud network?
+
+Restate the problem
+  1. I need to control parties with access to my cloud based network
+
+Provide a concrete example scenario
+  2. In my project example, I deployed a cloud network with its own access control
+
+   - I configured access controls to deny almost all inbound traffic with a few exceptions, those
+     include rules allowing my local machine to ssh into my jump box, allowing my jump box to ssh 
+     into other machines on my VNet using ansible, and allowing me to access port 5601 to my elk 
+     server so I may use Kibana to monitor my web servers. With these specific controls it allows me
+     to secure my network while still being able to maintain and montior it.
+
+   - This example is directly related to the interview question as it offers the entire purpose
+     behind network access controls. To secure the network and your data while still giving you
+     the freedom to utilize it safely, but with the precautionary measure of added montioring
+     software.
+
+Explain the solution
+  3. In order to explain how access controls should be implemented, here are the ones I used in my
+     cloud network and the reasons for their implementation:
+
+   - Having my webservers and elk stack required 2 separate VNets, which had 2 separate Security
+     Groups. For the web servers I had to block all inbound traffic by denying all sources, 
+     destinations, ports, and protocols. I gave this rule a lower priority than the rules that 
+     allow specific machines access as to avoid conflict between rules. I then made a rule that 
+     granted access to port 80 into my VNet from my local external IP, this allows me to SSH from
+     my local machine into a machine in the cloud network. However, this does not grant me access
+     to any machine without another rule giving me permission. So I included another rule that 
+     allows the VNet access to port 22 only into my Jump Box Provisioner, making that machine the
+     only one I can directly connect to from my local machine. Then by creating another rule that
+     gives my jump box access to the rest of the VNet via port 22 it ensures I would have to access
+     the jump box first before accessing the servers. I did include an ansible node within the
+     provisioner which contains the public/private key pairs to the other servers, this serves as
+     another layer of security as well as a more efficient way to configure my servers and 
+     set up the monitoring software. Two more rules exist for inbound traffic that operate only
+     within the VNet itself; one allows the VNet to communicate with itself on any port with any
+     protocol, this allows the machines to be discoverable to each other and gives me more freedom
+     if I decide to add any other configurations later where that might be required. The other
+     allows my load balancer to connect and communicate to anything within the VNet on any port.
+     Restricting my load balancer from communicating with machines would prevent it from doing its
+     job.
+
+     In my second security group lies my ELK server which also has the "Deny All" rule, as well as
+     the rule that allows the VNet full access to itself, since I created a peer-to-peer link 
+     between the 2 VNets so the logs and metrics my web servers collect can be
+     sent to the ELK server to be passed to Logstash and Elasticsearch. This peer-to-peer link is
+     necessary for another reason though. As I stated before, I was using Ansible to configure
+     containers and VMs, it was also used to install and configure ELK on my elk server, so another
+     rule had to be established giving access to port 22 from the web server's subnet. Lastly,
+     what would be the point of setting up an ELK server if I couldn't access the data on kibana?
+     By implementing a rule allowing TCP traffic to port 5601 from my local external IP to the ELK
+     server, I can use the external IP of the VM and port 5601 to access Kibana's web page detailing
+     the logs and metrics sent to it from my web servers.
+
+Identify advantage/disadvantages of the solution
+  4. Since most of the rules aside from the one specific to the jump box cover the entire network,
+     this model can be deployed and scaled as large or small as needed. A disadvantage is since 
+     these rules aren't VM specific, if an attacker found a way into one VM, they can problably 
+     access all the others as well.
+
+   - The Jump Box makes configuring servers and updating software easy and very efficient. It also
+     serves as the single point of entry to the network, making it easier to maintain access
+     control. However, there is some debate on the security stand point that using a jump box makes
+     that particular VM a target, and even with firewall software, could be more vulnerable than
+     a true firewall device in front of the network. In a cloud network you can't deploy and
+     configure such a firewall, so I believe the jump box is indeed the best option.
+
+   - "Why not use a VPN?" you might ask. There are a few reasons why I choose to steer clear of VPNs
+     for my cloud network:
+      
+      1. Potential blocks the chosen VPN might have could interfere with data transfer or
+         installation of needed software.
+
+      2. Encryption strength is unknown. Though it helps to choose a more trusted VPN, you can never
+         be too careful when it comes to sensitive data.
+
+      3. Most VPNs keep logs of your web traffic and some even sell it to third parties.
+
+      4. Possible connection breaks, though bigger VPNs provide many servers located across the
+         country, a connection break could be an aggrivating waste of time and loss of work.
+
+   - I won't deny VPNs do have their place and time though. I believe a VPN is appropriate when you
+     are not trying to manage, send, or download highly sensistive data. Whether it's your home
+     or business, just simply doing normal work where it's ok if certain traffic is logged or if
+     there is a break in connection. Or perhaps you simply need to hide internet activity for
+     whatever the reason. The VPNs might know but your ISP won't, and neither will any other prying
+     eyes attempting to view this. Other benefits might include: access to geo-blocked websites
+     or if your company has a corporate VPN (which would make any office work over VPN much safer)
+
+--Logging and monitoring--
+
+How do you determine which alerts to set in a new monitoring system?
+
+Restate the problem
+  1. How to determine which alerts to set in a newly deployed monitoring system.
+
+Provide a concrete example scenario
+  2. In my cloud network project I only had a total of 5 VMs, but I'll use this as a small scale
+     example for company alerts to set. The first VM was the Jump Box, which was used to access,
+     configure, and install new software/containers on the other VMs, next are my 3 web servers
+     which provided the DVWA containers, and lastly my ELK server which sends logs and metrics to
+     logstash and elasticsearch (This being the server that sends all the data for monitoring 
+     purposes).
+
+   - In a practical deployment the web servers would be publically accessible, while my jump box
+     and ELK server would remain unseen. In my project however, none of my VMs are visible to the
+     public.
+
+Explain the solution requirements
+  3. It's imperitive to keep a very close eye on the machines that are not to be accessed by the
+     public. On that note; alerts regarding ICMP messages, authentication attempts, and even TCP
+     handshakes are all prudent. It's best to know ahead of time when someone is attempting to
+     gain some level of access so you may take preventive measures should any further action be
+     necessary. These alerts should be sent immediately to keep an eye on the live stream. The
+     sooner you are aware the safer your data becomes.
+
+   - There is a reason these VMs are not accessible to the public, the jump box in my project
+     for example has control over all the other VMs, and access to the ELK server gives the attacker
+     a way to hide his tracks.
+
+Explain the solution details
+  4. Kibana Being such a powerful and open source tool comes with many options, one of them being
+     a built-in alerts engine of sorts. As your logs and mertics come flowing it, they're being
+     filtered, reorganized, and reformatted for Kibana to visualize them, in this process it can
+     also identify perameters you set for it to notify you on should those events arise. However,
+     in your own environment you can double protect yourself by deploying monitoring software
+     within the VM itself in addition to setting it up in kibana as well.
+
+Identify advantages/disadvantages
+  5. While monitoring software has it's obvious advantages, ones thing you can't alert on is a
+     legitimate log in by a malicous source. Should any attacker gain access to log in credentials,
+     there is no way to alert on his presence as the software believes it is a legitamite user.
+     This is why it's so important to have multiple layers of security, and even though no system
+     is 100% impenitrable, it's still possible to make it increadibly difficult, seemingly
+     impossible for most attackers with the right architecture.

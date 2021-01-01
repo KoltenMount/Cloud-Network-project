@@ -1,0 +1,87 @@
+The following information was a small practice investigation of sample web logs on Kibana to
+familiarize myself with the tools.
+
+1.
+In the last 7 days, how many unique visitors were located in India?
+ - 229 unique visitors from india
+
+In the last 24 hours, of the visitors from China, how many were using Mac OSX?
+ - 22.73% OSX from China in last 24 hrs
+
+In the last 2 days, what percentage of visitors received 404 errors? How about 503 errors?
+ - 0% 404 errors, 50% 503 errors
+
+In the last 7 days, what country produced the majority of the traffic on the website?
+ - China produced the most traffic
+
+Of the traffic that's coming from that country, what time of day had the highest amount of activity?
+ - Between 12 pm and 1 pm
+
+List all the types of downloaded files that have been identified for the last 7 days.
+ - gz (compressed archive file), css (cascading style sheet), zip (compressed folder), 
+   deb (debian package management file), rpm (red hat package management file)
+
+2.
+
+Locate the time frame in the last 7 days with the most amount of bytes (activity).
+ - time frame located (Dec 23, 2020 @ 15:00:00 -> 18:00:00)
+
+In your own words, is there anything that seems potentially strange about this activity?
+ - a little over 9 kb download, deb file, from ethiopia, middle of the day, and after some research
+   I can't find an average size for a deb file, but I did find sizes of average malware files.
+   the closest thing I could find was Trojan files. Currently there's not enough info to tell
+   if this activity is suspect.
+
+3. (Filtered all activity by this single event)
+
+What is the timestamp for this event?
+ - Dec 23, 2020 @ 17:00
+
+ What kind of file was downloaded?
+ - deb file
+
+From what country did this activity originate?
+ - Ethiopia
+
+What HTTP response codes were encountered by this visitor?
+ - 200 response code (success)
+
+4.
+
+What is the source IP address of this activity?
+ - 234.226.50.122
+
+What are the geo coordinates of this activity?
+ - lat: 46.94100778 lon:-98.01762611
+
+What OS was the source machine running?
+ - win xp
+
+What is the full URL that was accessed?
+ - https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.3.2.deb
+
+From what website did the visitor's traffic originate?
+ - http://nytimes.com/success/gerald-p-carr
+
+5.
+
+What do you think the user was doing?
+ - The user could have been doing any number of things, it looks like he was doing a little research
+   on a famous astronaught prior to the downlaod. The URL indicates the download was from a safe
+   website, indicated by "HTTPS". The user could have been setting up a VM environment for example. But
+   considering it is a deb file it's possible he's using it to inject trojan malware for phising
+   purposes, or if the user has somehow gained access to another machine, it could be used to
+   inject any form of malware. There is not enough evidence to believe the user is up to nefarious 
+   deeds however.
+
+Was the file they downloaded malicious? If not, what is the file used for?
+ - I don't believe the file was malicious, it's simply a packet management file for debian
+
+Is there anything that seems suspicious about this activity?
+ - Other than a Windows OS downloading a DEB file, not really. But again, it could still be used
+   to inject malicious script and infect some other company.
+
+Is any of the traffic you inspected potentially outside of compliance guidlines?
+ - From what I inspected and with the help of additional research I could find on web traffic 
+   compliance guidlines, nothing I saw was potenially outside of said guidlines.
+   

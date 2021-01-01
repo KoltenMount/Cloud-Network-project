@@ -1,0 +1,68 @@
+To gauage the montiring capabilities and see them in action I'm going to run some tests against
+the system metrics and log events of one of my VMs.
+
+1. I'll start by running a failed SSH attempt on one of my VMs
+ - As predicted, I found a single log for a failed authentication, but I would like to run it in
+   a loop to generate a bunch of notifications. For this I don't want to run it infinitely, so 
+   the command I used is as follows:
+
+     - 'for i in {1..100} ; do for ip in $(cat web_server_ips.txt) ; do ssh azadmin@$ip ; done 
+        ; done'
+
+ - This was a nested "for loop" that generated 100 failed authentication attempts across all 3 of my
+   VMs. I included a snapshot of what the logs show as in Kibana for these in: 
+   https://github.com/KoltenMount/Cloud_Network_project/blob/main/Images/kibana_failed_ssh_logs.PNG
+
+
+2. Next I'll generate a high amount of CPU usage on the web servers using the "stress" command to
+  verify Kibana picks up this data.
+
+ - After SSH-ing into one of the VMs I must first install the "stress" service
+   - 'sudo apt install stress'
+
+ - My VMs are tiny and contain very little available memory or CPU so I only need to specify 1 
+   stress worker
+   - 'sudo stress --cpu 1'
+
+ - I did see a spike in the metrics but to see a greater impact I will reproduce this on all 3 of
+   my web servers.
+
+ - a largely noticable difference this time with a heavy spike in cpu usage. I provided screenshots
+   of the occurances:
+   https://github.com/KoltenMount/Cloud_Network_project/blob/main/Images/stress_metrics_web1.PNG
+   https://github.com/KoltenMount/Cloud_Network_project/blob/main/Images/stress_metrics_web2.PNG
+   https://github.com/KoltenMount/Cloud_Network_project/blob/main/Images/stress_metrics_web3.PNG
+
+3. Now to test the traffic flow metrics I'll make a high amount of web requests to my web servers
+   to make sure Kibana is picking that up as well.
+
+ - From my Jump Box I can run 'wget ip.of.web.vm' to make a request and create a new 'index.html'
+   file in the current directory.
+
+ - If I want to see a significant difference in the data I need to run a similar command as before
+   with the nested "for loop". This time however, I will use an infinite nested loop that runs the
+   'wget' command aginst all 3 of my web servers. In addition, since every time I run the 'wget' it
+   creates a new "index.html" file, that would fill my directory with a large amount of duplicate
+   files. So I will also incude a way to prevent this in my command.
+
+   - 'while : ; do rm index.html* ; for ip in $(cat web_ips.txt) ; do wget $ip ; done ; done'
+
+ - As expected network traffic was affected with a large spike of in and out traffic.
+
+4. In case you were wondering how to set the specific file path when running "wget" should you want
+   or need to save the info you requested, you may do that by adding the option:
+
+   - -P path_to_directory OR --directory-prefix=path_to_directory
+
+   - Of course if you DON'T want to save these files you can use the same command I did or simply
+     set the file path to your '/var/tmp/' directory as it doesn't save anything by altering my
+     command to:
+     
+     - 'while : ; do mv index.html* /var/tmp/ ; for ip in $(cat web_ips.txt) ; do wget $ip ; done 
+       ; done'
+
+   - Or by removing the file removable part from the command and running the following command 
+     afterwards:
+     
+     - mv index.html* /var/tmp/
+
